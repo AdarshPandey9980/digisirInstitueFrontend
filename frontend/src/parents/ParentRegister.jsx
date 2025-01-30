@@ -2,33 +2,42 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const InstituteForm = () => {
-  const [instituteName, setInstituteName] = useState("");
-  const [instituteAddress, setInstituteAddress] = useState("");
-  const [password, setPassword] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [aadharCardNumber, setAadharCardNumber] = useState("");
-  const [avatar, setAvatar] = useState(null);
-  const [email, setEmail] = useState("");
+const ParentRegisterForm = () => {
+  const [formData, setFormData] = useState({
+    parentName: "",
+    parentAddress: "",
+    password: "",
+    contactNumber: "",
+    aadharCardNumber: "",
+    avatar: null,
+    email: "",
+  });
+
   const [otp, setOtp] = useState("");
   const [showOtpDialog, setShowOtpDialog] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleFileChange = (e) => {
-    setAvatar(e.target.files[0]);
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "avatar") {
+      setFormData({ ...formData, avatar: files[0] });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const sendOtp = async () => {
-    if (!contactNumber) {
+    if (!formData.contactNumber) {
       alert("Please enter a contact number first.");
       return;
     }
 
     try {
       const response = await axios.post("http://localhost:8000/api/otp/send-otp", {
-        phoneNumber: contactNumber,
+        phoneNumber: formData.contactNumber,
       });
 
       if (response.data.success) {
@@ -47,7 +56,7 @@ const InstituteForm = () => {
   const verifyOtp = async () => {
     try {
       const response = await axios.post("http://localhost:8000/api/otp/verify-otp", {
-        phoneNumber: contactNumber,
+        phoneNumber: formData.contactNumber,
         otp: otp,
       });
 
@@ -72,28 +81,48 @@ const InstituteForm = () => {
       return;
     }
 
+    // Validate form data
+    if (
+      !formData.parentName ||
+      !formData.parentAddress ||
+      !formData.password ||
+      !formData.contactNumber ||
+      !formData.aadharCardNumber ||
+      !formData.avatar ||
+      !formData.email
+    ) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
     const data = new FormData();
-    data.append("institute_name", instituteName);
-    data.append("address", instituteAddress);
-    data.append("password", password);
-    data.append("contact_number", contactNumber);
-    data.append("aadharCardNumber", aadharCardNumber);
-    data.append("avatar", avatar);
-    data.append("email", email);
+    data.append("name", formData.parentName);
+    data.append("address", formData.parentAddress);
+    data.append("password", formData.password);
+    data.append("contact_number", formData.contactNumber);
+    data.append("aadharCardNumber", formData.aadharCardNumber);
+    data.append("avatar", formData.avatar); // File upload
+    data.append("email", formData.email);
+
+    // Log FormData contents
+    for (let [key, value] of data.entries()) {
+      console.log(`${key}: ${value instanceof File ? value.name : value}`);
+    }
 
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/instituteAdmin/register",
+        "http://localhost:8000/api/parent/register", // Update the URL as per your backend
         data,
         {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: {
+            "Content-Type": "multipart/form-data", // Ensure multipart header
+          },
         }
       );
-
-      navigate("/institute-login");
+      navigate("/parent-login"); // Navigate to the login page
       console.log(response.data);
     } catch (error) {
-      console.error("Error:", error.response?.data || error.message);
+      console.error("Error response:", error.response?.data || error.message);
       alert("Failed to submit the form");
     }
   };
@@ -102,7 +131,7 @@ const InstituteForm = () => {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          Institute Registration Form
+          Parent Registration Form
         </h2>
         <form onSubmit={handleSubmit} encType="multipart/form-data">
           {!otpVerified && (
@@ -112,8 +141,9 @@ const InstituteForm = () => {
               </label>
               <input
                 type="tel"
-                value={contactNumber}
-                onChange={(e) => setContactNumber(e.target.value)}
+                name="contactNumber"
+                value={formData.contactNumber}
+                onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -148,13 +178,6 @@ const InstituteForm = () => {
               >
                 Verify OTP
               </button>
-              <button
-                type="button"
-                onClick={sendOtp}
-                className="mt-2 w-full text-blue-500 underline focus:outline-none"
-              >
-                Resend OTP
-              </button>
             </div>
           )}
 
@@ -162,12 +185,13 @@ const InstituteForm = () => {
             <>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-600 mb-2">
-                  Institute Name
+                  Parent Name
                 </label>
                 <input
                   type="text"
-                  value={instituteName}
-                  onChange={(e) => setInstituteName(e.target.value)}
+                  name="parentName"
+                  value={formData.parentName}
+                  onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -175,12 +199,13 @@ const InstituteForm = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-600 mb-2">
-                  Institute Address
+                  Parent Address
                 </label>
                 <input
                   type="text"
-                  value={instituteAddress}
-                  onChange={(e) => setInstituteAddress(e.target.value)}
+                  name="parentAddress"
+                  value={formData.parentAddress}
+                  onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -192,8 +217,9 @@ const InstituteForm = () => {
                 </label>
                 <input
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -205,8 +231,9 @@ const InstituteForm = () => {
                 </label>
                 <input
                   type="text"
-                  value={aadharCardNumber}
-                  onChange={(e) => setAadharCardNumber(e.target.value)}
+                  name="aadharCardNumber"
+                  value={formData.aadharCardNumber}
+                  onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -214,11 +241,13 @@ const InstituteForm = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-600 mb-2">
-                  Avatar
+                  Avatar (Upload Image)
                 </label>
                 <input
                   type="file"
-                  onChange={handleFileChange}
+                  name="avatar"
+                  onChange={handleChange}
+                  accept="image/*"
                   required
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -230,8 +259,9 @@ const InstituteForm = () => {
                 </label>
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -239,9 +269,9 @@ const InstituteForm = () => {
 
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 focus:outline-none"
+                className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                Submit Form
+                Submit
               </button>
             </>
           )}
@@ -251,4 +281,4 @@ const InstituteForm = () => {
   );
 };
 
-export default InstituteForm;
+export default ParentRegisterForm;

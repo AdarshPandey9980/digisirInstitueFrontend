@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import StudentSection from './StudentSection'; // Import the new StudentSection component
+import TeacherSection from './TeacherSection'
 
 const Dashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -173,6 +174,14 @@ const Dashboard = () => {
           >
             Students
           </div>
+          <div className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              activeSection === "teachers"
+                ? "bg-blue-100 text-blue-600"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+            onClick={() => handleSidebarClick("teachers")}>
+            Teachers
+          </div>
         </nav>
       </aside>
 
@@ -242,6 +251,7 @@ const Dashboard = () => {
           </div>
         )}
         {activeSection === "students" && <StudentSection />} {/* Render the StudentSection component */}
+        {activeSection === "teachers" && <TeacherSection />} {/* Render TeacherSection */}
       </main>
     </div>
   );

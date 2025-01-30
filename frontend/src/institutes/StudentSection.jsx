@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { Search } from "lucide-react";
+import { Search, Edit, Trash2 } from "lucide-react";
 
 export default function StudentsSection() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [studentData, setStudentData] = useState([]);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,13 +15,30 @@ export default function StudentsSection() {
     const fetchStudents = async () => {
       setIsLoading(true);
       try {
-        const token = Cookies.get("instituteId");
+        const instituteId = Cookies.get("instituteId");
         const response = await axios.post(
           "http://localhost:8000/api/student/get-all-students",
-          { instituteId: token }
+          { instituteId }
         );
+
         if (Array.isArray(response.data.result)) {
-          setStudentData(response.data.result);
+          const studentList = response.data.result;
+
+          const detailedStudents = await Promise.all(
+            studentList.map(async (student, index) => {
+              try {
+                const detailResponse = await axios.get(
+                  `http://localhost:8000/api/student/${student.student_id}`
+                );
+                return { ...student, ...detailResponse.data.result, index };
+              } catch (err) {
+                console.error(`Error fetching details for student ${student.student_id}:`, err);
+                return { ...student, error: "Details not available" };
+              }
+            })
+          );
+
+          setStudentData(detailedStudents);
         }
       } catch (err) {
         setError("Failed to fetch student data. Please try again later.");
@@ -34,9 +49,24 @@ export default function StudentsSection() {
     fetchStudents();
   }, []);
 
+  const handleEdit = (studentId) => {
+    console.log("Edit student", studentId);
+  };
+
+  const handleDelete = async (studentId) => {
+    if (window.confirm("Are you sure you want to delete this student?")) {
+      try {
+        await axios.delete(`http://localhost:8000/api/student/${studentId}`);
+        setStudentData(studentData.filter(student => student.student_id !== studentId));
+      } catch (err) {
+        console.error("Error deleting student", err);
+      }
+    }
+  };
+
   const filteredStudents = studentData.filter((student) =>
     Object.values(student).some((value) =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -44,20 +74,6 @@ export default function StudentsSection() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentStudents = filteredStudents.slice(startIndex, endIndex);
-
-  const openEditDialog = (student) => {
-    setEditingStudent(student);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleSave = () => {
-    setStudentData((prev) =>
-      prev.map((student) =>
-        student._id === editingStudent._id ? editingStudent : student
-      )
-    );
-    setIsEditDialogOpen(false);
-  };
 
   return (
     <div className="w-full bg-white min-h-screen p-6">
@@ -88,6 +104,7 @@ export default function StudentsSection() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
+                    <th className="py-4 px-4 text-gray-500 font-medium">#</th>
                     <th className="py-4 px-4 text-gray-500 font-medium">Avatar</th>
                     <th className="py-4 px-4 text-gray-500 font-medium">Name</th>
                     <th className="py-4 px-4 text-gray-500 font-medium">Email</th>
@@ -97,11 +114,12 @@ export default function StudentsSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentStudents.map((student) => (
-                    <tr key={student._id} className="border-b hover:bg-gray-50">
+                  {currentStudents.map((student, index) => (
+                    <tr key={student.student_id} className="border-b hover:bg-gray-50">
+                      <td className="py-4 px-4">{index + 1}</td>
                       <td className="py-4 px-4">
                         <img
-                          src={student.avatar}
+                          src={student.avatar || "https://via.placeholder.com/40"}
                           alt={student.name}
                           className="w-10 h-10 rounded-full"
                         />
@@ -110,12 +128,18 @@ export default function StudentsSection() {
                       <td className="py-4 px-4">{student.email}</td>
                       <td className="py-4 px-4">{student.address}</td>
                       <td className="py-4 px-4">{student.contact_number || "N/A"}</td>
-                      <td className="py-4 px-4">
+                      <td className="py-4 px-4 flex gap-3">
                         <button
-                          className="text-blue-500 hover:bg-blue-50 rounded-full p-2"
-                          onClick={() => openEditDialog(student)}
+                          className="text-blue-500 hover:text-blue-700"
+                          onClick={() => handleEdit(student.student_id)}
                         >
-                          Edit
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => handleDelete(student.student_id)}
+                        >
+                          <Trash2 size={18} />
                         </button>
                       </td>
                     </tr>
@@ -124,97 +148,7 @@ export default function StudentsSection() {
               </table>
             </div>
           )}
-
-          <div className="flex justify-between items-center mt-4">
-            <button
-              className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              Prev
-            </button>
-            <div className="flex gap-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  className={`w-8 h-8 rounded-lg ${
-                    currentPage === page ? "bg-blue-500 text-white" : "hover:bg-gray-100"
-                  }`}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-            <button
-              className="px-3 py-1 border rounded hover:bg-gray-50 disabled:opacity-50"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
         </>
-      )}
-
-      {isEditDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
-            <h2 className="text-lg font-semibold mb-4">Edit Student</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                placeholder="Name"
-                value={editingStudent.name}
-                onChange={(e) =>
-                  setEditingStudent({ ...editingStudent, name: e.target.value })
-                }
-              />
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                placeholder="Email"
-                value={editingStudent.email}
-                onChange={(e) =>
-                  setEditingStudent({ ...editingStudent, email: e.target.value })
-                }
-              />
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                placeholder="Address"
-                value={editingStudent.address}
-                onChange={(e) =>
-                  setEditingStudent({ ...editingStudent, address: e.target.value })
-                }
-              />
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                placeholder="Contact Number"
-                value={editingStudent.contact_number}
-                onChange={(e) =>
-                  setEditingStudent({ ...editingStudent, contact_number: e.target.value })
-                }
-              />
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                className="px-4 py-2 border rounded"
-                onClick={() => setIsEditDialogOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-                onClick={handleSave}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
