@@ -2,15 +2,13 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const StudentRegister = () => {
+const SuperAdminRegister = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     otp: "",
-    address: "",
-    aadharCardNumber: "",
     password: "",
     mobile_number: "",
     avatar: null,
@@ -25,7 +23,6 @@ const StudentRegister = () => {
   const handleFileChange = (e) => {
     setFormData((prev) => ({ ...prev, avatar: e.target.files[0] }));
   };
-
   const sendOTP = async () => {
     try {
       const response = await axios.post("http://localhost:8000/api/superAdmin/sendOtp", { name: formData.name, email: formData.email });
@@ -38,7 +35,6 @@ const StudentRegister = () => {
       console.error("Error sending OTP", error);
     }
   };
-
   const verifyOTP = async () => {
     try {
       const response = await axios.post("http://localhost:8000/api/superAdmin/verifyOtp", {
@@ -53,22 +49,19 @@ const StudentRegister = () => {
 
   const register = async () => {
     try {
-      const response = await axios.post("http://localhost:8000/api/student/register",{
-        name: formData.name,
-        address: formData.address,
-        password: formData.password,
-        contact_number: formData.mobile_number,
-        aadharCardNumber: formData.aadharCardNumber,
-        avatar: formData.avatar,
-        email: formData.email
+      const response = await axios.post("http://localhost:8000/api/superAdmin/register",{
+        name:formData.name,
+        email:formData.email,
+        password:formData.password,
+        mobile_number:formData.mobile_number,
+        avatar:formData.avatar
       },{
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
       if (response.status === 200)
-        Cookies.set("userId",studentId);
-        navigate('/student-dashboard');
+        navigate('/superadmin-dashboard');
     } catch (error) {
       console.error("Error registering user", error);
     }
@@ -96,10 +89,6 @@ const StudentRegister = () => {
       {step === 3 && (
         <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
           <h2 className="text-xl font-semibold mb-4">Complete Registration</h2>
-          <label className="block mb-1">Address</label>
-          <input className="w-full p-2 border rounded mb-2" name="address" placeholder="Address" onChange={handleChange} />
-          <label className="block mb-1">Aadhar Card Number</label>
-          <input className="w-full p-2 border rounded mb-2" name="aadharCardNumber" placeholder="Aadhar Card Number" onChange={handleChange} />
           <label className="block mb-1">Password</label>
           <input className="w-full p-2 border rounded mb-2" name="password" type="password" placeholder="Password" onChange={handleChange} />
           <label className="block mb-1">Mobile Number</label>
@@ -113,4 +102,4 @@ const StudentRegister = () => {
   );
 };
 
-export default StudentRegister;
+export default SuperAdminRegister;

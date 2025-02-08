@@ -15,6 +15,10 @@ import TeacherDashboard from './teachers/TeacherDashboard'
 import ParentRegisterForm from './parents/ParentRegister'
 import ParentLogin from './parents/ParentLogin'
 import ParentDashboard from './parents/ParentDashboard'
+import SuperAdminRegister from './superAdmins/SuperAdminRegister'
+import SuperAdminLogin from './superAdmins/superAdminLogin'
+import SuperAdminDashboard from './superAdmins/superAdminDashboard'
+import InstituteDetail from './superAdmins/InstituteDetails'
 function App() {
   const [count, setCount] = useState(0)
 
@@ -22,6 +26,10 @@ function App() {
     <>
       <BrowserRouter>
         <Routes>
+          <Route path='/institute/:id' element={<InstituteDetail/>}/>
+          <Route path="/superadmin-register" element={<SuperAdminRegister/>} />
+          <Route path="/superadmin-login" element={<SuperAdminLogin/>} />
+          <Route path="/superadmin-dashboard" element={<SuperAdminDashboard/>} />
           <Route path='/institute-register' element={<InstituteForm/>}/>
           <Route path='/institute-login' element={<InstituteLogin/> }/>
           <Route path='/institute-dashboard' element={<InstituteDashboard/> }/>

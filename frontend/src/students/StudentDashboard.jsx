@@ -64,11 +64,11 @@ const StudentDashboard = () => {
         setIsJoined(true);
         localStorage.setItem("isJoined", true);
         // Re-fetch the institute details after successful join
-        const instituteResponse = await axios.get(
-          `http://localhost:8000/api/student/getInfo/${response.data.instituteId}`
-        );
-        setInstituteInfo(instituteResponse.data);
-        localStorage.setItem("instituteInfo", JSON.stringify(instituteResponse.data));
+        // const instituteResponse = await axios.get(
+        //   `http://localhost:8000/api/student/getInfo/${response.data.instituteId}`
+        // );
+        // setInstituteInfo(instituteResponse.data);
+        // localStorage.setItem("instituteInfo", JSON.stringify(instituteResponse.data));
       } else {
         console.log("Failed to join institute.");
       }
